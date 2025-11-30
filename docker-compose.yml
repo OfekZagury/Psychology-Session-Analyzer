@@ -1,0 +1,154 @@
+version: '3.8'
+
+services:
+  # ---------------------------------------------------------------------------
+  # INFRASTRUCTURE (The "Plumbing")
+  # ---------------------------------------------------------------------------
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: therapy-rabbitmq
+    ports:
+      - "5672:5672"   # Message communication
+      - "15672:15672" # Management Dashboard (http://localhost:15672)
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+    networks:
+      - therapy-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio
+    container_name: therapy-minio
+    ports:
+      - "9000:9000"   # API Port
+      - "9001:9001"   # Console Port (http://localhost:9001)
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - therapy-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # This is a temporary utility container to create the buckets automatically
+  create-buckets:
+    image: minio/mc
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      /usr/bin/mc alias set myminio http://minio:9000 ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD};
+      /usr/bin/mc mb myminio/videos;
+      /usr/bin/mc mb myminio/audio;
+      exit 0;
+      "
+    networks:
+      - therapy-network
+
+  mongodb:
+    image: mongo:latest
+    container_name: therapy-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - therapy-network
+
+  redis:
+    image: redis:alpine
+    container_name: therapy-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - therapy-network
+
+  # ---------------------------------------------------------------------------
+  # APP SERVICES (The "Actors")
+  # ---------------------------------------------------------------------------
+
+  upload-service:
+    build: ./services/upload-service
+    container_name: upload-service
+    ports:
+      - "8000:8000" # Host port 8000 mapped to container port 8000
+    env_file: .env
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    networks:
+      - therapy-network
+
+  audio-extractor-service:
+    build: ./services/audio-extractor
+    container_name: audio-extractor
+    # No ports needed (It's a background worker)
+    env_file: .env
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    networks:
+      - therapy-network
+
+  transcription-service:
+    build: ./services/transcription-service
+    container_name: transcription-service
+    env_file: .env
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - therapy-network
+
+  analysis-service:
+    build: ./services/analysis-service
+    container_name: analysis-service
+    env_file: .env
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      mongodb:
+        condition: service_started
+    networks:
+      - therapy-network
+
+  reporting-service:
+    build: ./services/reporting-service
+    container_name: reporting-service
+    ports:
+      - "8001:8000" # Mapped to 8001 to avoid conflict with upload-service
+    env_file: .env
+    depends_on:
+      mongodb:
+        condition: service_started
+    networks:
+      - therapy-network
+
+# ---------------------------------------------------------------------------
+# VOLUMES & NETWORKS
+# ---------------------------------------------------------------------------
+volumes:
+  minio_data:
+  mongo_data:
+
+networks:
+  therapy-network:
+    driver: bridge
