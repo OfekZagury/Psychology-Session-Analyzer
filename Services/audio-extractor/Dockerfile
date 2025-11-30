@@ -2,5 +2,13 @@ FROM python:3.9-slim
 
 WORKDIR /app
 
-CMD ["tail", "-f", "/dev/null"]
-# Command that keeps the container up without doing anything (so it doesn't crash immediately after starting)
+RUN apt-get update && \
+    apt-get install -y ffmpeg && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY src/ ./src/
+
+CMD ["python", "src/main.py"]
