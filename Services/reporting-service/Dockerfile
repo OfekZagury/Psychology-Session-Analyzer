@@ -2,5 +2,11 @@ FROM python:3.9-slim
 
 WORKDIR /app
 
-CMD ["tail", "-f", "/dev/null"]
-# Command that keeps the container up without doing anything (so it doesn't crash immediately after starting)
+ENV PYTHONUNBUFFERED=1
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY src/ ./src/
+
+CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
