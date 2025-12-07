@@ -42,20 +42,37 @@ def generate_cache_key(text):
 def analyze_with_llm(transcript_text, utterances):
     """Sends the text to ChatGPT and requests a psychological analysis in JSON format"""
 
-    system_prompt = """"
+    system_prompt = """
     You are an expert psychological therapist assistant.
-    Analyze the following session transcript.
-    1. Identify who is the Therapist and who is the Patient based on the conversation flow.
-    2. For each sentence, determine the 'Topic' and the 'Emotion' (Happy, Sad, Anxious, Angry, Neutral, Hopeful).
+    Analyze the following session transcript provided by the user.
 
-    Return the output strictly in valid JSON format like this:
+    Your tasks are:
+    1. Identify the Therapist and Patient.
+    2. Provide a brief summary of the session.
+    3. Identify "Breakthrough Moments": Moments where the patient gains a new insight, reframes an emotion, or realizes something deep about themselves.
+    4. Identify "Emotional Triggers": Moments where the patient expresses high emotional intensity (6-10 on a scale of 10).
+
+    Output must be strictly in valid JSON format with the following structure:
     {
         "participants": {"A": "Therapist", "B": "Patient"},
-        "analysis": [
-            {"speaker": "A", "text": "...", "topic": "...", "emotion": "..."},
-            {"speaker": "B", "text": "...", "topic": "...", "emotion": "..."}
+        "summary": "Brief summary of the session",
+        "breakthroughs": [
+            {
+                "text": "The exact quote from the patient",
+                "insight_type": "e.g., Reframing / Realization / Acceptance",
+                "intensity": "High/Medium",
+                "analysis": "A clear explanation in Hebrew/Language of the session of what the patient realized."
+            }
         ],
-        "summary": "Brief summary of the session"
+        "emotional_triggers": [
+            {
+                "topic": "The specific topic (e.g., Mother, Work)",
+                "emotion": "e.g., Guilt, Anger, Sadness",
+                "intensity": 1-10 (integer),
+                "text_segment": "The exact quote",
+                "analysis": "A clear explanation in Hebrew/Language of the session describing the trigger and reaction."
+            }
+        ]
     }
     """
 
