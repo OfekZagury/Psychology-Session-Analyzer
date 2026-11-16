@@ -25,6 +25,7 @@ REDIS_HOST = os.getenv("REDIS_HOST", "redis")
 MONGO_URI = "mongodb://mongodb:27017/"
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 
 # --- 3. Customers ---
 redis_client = redis.Redis(host=REDIS_HOST, port=6379, db=0)
@@ -82,7 +83,7 @@ def analyze_with_llm(transcript_text, utterances):
         conversation_str += f"Speaker {u['speaker']}: {u['text']}\n"
 
     response = openai_client.chat.completions.create(
-        model="gpt-3.5-turbo-1106",  # Fast model that supports JSON
+        model=OPENAI_MODEL,  # must support JSON mode
         response_format={"type": "json_object"},
         messages=[
             {"role": "system", "content": system_prompt},

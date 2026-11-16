@@ -26,6 +26,7 @@ RABBITMQ_USER = os.getenv("RABBITMQ_DEFAULT_USER", "guest")
 RABBITMQ_PASS = os.getenv("RABBITMQ_DEFAULT_PASS", "guest")
 
 ASSEMBLYAI_API_KEY = os.getenv("ASSEMBLYAI_API_KEY")
+TRANSCRIPTION_LANGUAGE = os.getenv("TRANSCRIPTION_LANGUAGE", "en")
 
 # --- 3. Clients ---
 minio_client = Minio(
@@ -65,7 +66,7 @@ def transcribe_audio(upload_url):
     json_data = {
     "audio_url": upload_url,
     "speaker_labels": True, # distinguishes between a therapist and a patient
-    "language_code": "en"
+    "language_code": TRANSCRIPTION_LANGUAGE
     }
 
     response = requests.post(
