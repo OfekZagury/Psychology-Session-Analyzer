@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # ---------------------------------------------------------------------------
   # INFRASTRUCTURE (The "Plumbing")
@@ -78,6 +76,7 @@ services:
   datadog:
     image: gcr.io/datadoghq/agent:7
     container_name: therapy-datadog
+    profiles: ["monitoring"]  # optional: docker compose --profile monitoring up
     environment:
       - DD_API_KEY=${DD_API_KEY}
       - DD_SITE=${DD_SITE}
