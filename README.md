@@ -95,6 +95,16 @@ The analysis service asks the model for this structure:
 | `MINIO_ROOT_USER` / `_PASSWORD` | – | Object storage credentials |
 | `DD_API_KEY` / `DD_SITE` | – | Optional Datadog monitoring |
 
+## Tests
+
+Unit tests for the analysis service use in-memory fakes for Redis, MongoDB, RabbitMQ and the LLM, so they need no containers or API keys:
+
+```bash
+cd services/analysis-service
+pip install -r requirements.txt
+python -m unittest discover tests
+```
+
 ## Privacy note
 
 Therapy recordings are highly sensitive. This project is a technical demo: use only synthetic or publicly available sessions, and do not send real patient data to third-party APIs.

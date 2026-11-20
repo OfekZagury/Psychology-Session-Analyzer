@@ -113,6 +113,10 @@ def process_analysis(ch, method, properties, body):
         if cached_result:
             logger.info("Cache HIT - Fetching from Redis", extra={"video_id": video_id})
             final_analysis = json.loads(cached_result)
+            # The cache is keyed by transcript content, so the cached document still carries
+            # the first upload's video_id. Re-label it for this upload before saving.
+            final_analysis["video_id"] = video_id
+            final_analysis["timestamp"] = message.get('timestamp', None)
         else:
             logger.info("Cache MISS - Calling OpenAI", extra={"video_id": video_id})
             # 2. Calling LLM
